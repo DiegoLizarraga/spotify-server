@@ -1,0 +1,5 @@
+fastapi[standard]
+sqlmodel
+asyncpg
+scalar-fastapi
+python-dotenv

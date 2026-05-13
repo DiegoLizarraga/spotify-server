@@ -1,0 +1,125 @@
+# Postify Server
+
+API backend para Postify construida con FastAPI y SQLModel.
+
+## Configuración Inicial
+
+### 1. Instalar dependencias
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Configurar variables de entorno
+
+Crea un archivo `.env` basado en `.env.example`:
+
+```bash
+DATABASE_URL=postgresql+asyncpg://usuario:password@localhost/postify
+```
+
+### 3. Iniciar el servidor
+
+```bash
+fastapi dev
+```
+
+## Crear Tablas Automáticamente al Iniciar la App
+
+Este proyecto está configurado para crear las tablas de base de datos automáticamente cuando inicias el servidor.
+
+### Cómo funciona
+
+#### 1. Archivo `app/db/init_db.py`
+
+```python
+from sqlmodel import SQLModel
+from app.db.session import engine
+from app.models.user import User  # Importa todos tus modelos
+
+
+async def init_db():
+    """Crea todas las tablas si no existen"""
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+```
+
+#### 2. Configuración en `main.py`
+
+```python
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from app.db.init_db import init_db
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Crear tablas automáticamente
+    await init_db()
+    yield
+    # Shutdown
+
+
+app = FastAPI(lifespan=lifespan)
+```
+
+### ¿Qué hace?
+
+- Cuando inicias el servidor con `fastapi dev`, automáticamente revisa si las tablas existen
+- Si no existen, las crea basándose en tus modelos SQLModel
+- Si ya existen, no hace nada (no borra datos)
+- **Cero comandos manuales necesarios**
+
+### Agregar nuevos modelos
+
+Cada vez que crees un nuevo modelo:
+
+1. Créalo en `app/models/`
+2. Impórtalo en `app/db/init_db.py`:
+   ```python
+   from app.models.user import User
+   from app.models.post import Post  # Nuevo modelo
+   ```
+3. Reinicia el servidor - la nueva tabla se creará automáticamente
+
+## Endpoints
+
+### Users
+
+- `GET /users/` - Obtener todos los usuarios
+- `POST /users/` - Crear un nuevo usuario
+
+### Documentación
+
+- Swagger UI: `http://localhost:8000/docs`
+- Scalar API: `http://localhost:8000/scalar`
+
+## Estructura del Proyecto
+
+```
+server-postify/
+├── app/
+│   ├── db/
+│   │   ├── __init__.py
+│   │   ├── session.py       # Configuración de la base de datos
+│   │   └── init_db.py       # Creación automática de tablas
+│   ├── models/
+│   │   ├── __init__.py
+│   │   └── user.py          # Modelos SQLModel
+│   ├── routers/
+│   │   ├── __init__.py
+│   │   └── users.py         # Endpoints de usuarios
+│   └── schemas/
+│       ├── __init__.py
+│       └── user.py          # Schemas Pydantic
+├── main.py                  # Aplicación FastAPI principal
+├── .env                     # Variables de entorno (no commiteado)
+└── README.md
+```
+
+## Tecnologías
+
+- **FastAPI** - Framework web
+- **SQLModel** - ORM (SQLAlchemy + Pydantic)
+- **PostgreSQL** - Base de datos
+- **asyncpg** - Driver asíncrono de PostgreSQL
