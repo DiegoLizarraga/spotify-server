@@ -1,6 +1,7 @@
 from typing import List
+import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -24,3 +25,12 @@ async def create_post(data: PostCreate, session: AsyncSession = Depends(get_sess
     await session.commit()
     await session.refresh(post)
     return post
+
+
+@router.delete("/{post_id}", status_code=204)
+async def delete_post(post_id: uuid.UUID, session: AsyncSession = Depends(get_session)):
+    post = await session.get(Post, post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    await session.delete(post)
+    await session.commit()

@@ -16,4 +16,4 @@ class User(SQLModel, table=True):
     password: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-    posts: List["Post"] = Relationship(back_populates="user")
+    posts: List["Post"] = Relationship(back_populates="user", sa_relationship_kwargs={"cascade": "all, delete-orphan"})

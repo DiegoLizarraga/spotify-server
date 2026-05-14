@@ -10,5 +10,6 @@ class PostCreate(SQLModel):
 
 
 class PostRead(SQLModel):
+    id: uuid.UUID
     description: str
     created_at: datetime
