@@ -9,6 +9,7 @@ class Image(SQLModel, table=True):
     
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     url: str
+    public_id: str
     post_id: uuid.UUID = Field(foreign_key="posts.id")
 
     

@@ -3,3 +3,4 @@ sqlmodel
 asyncpg
 scalar-fastapi
 python-dotenv
+cloudinary

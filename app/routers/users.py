@@ -6,6 +6,9 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.db.session import get_session
+from app.models.comment import Comment
+from app.models.image import Image
+from app.models.like import Like
 from app.models.user import User
 from app.models.post import Post
 from app.schemas.user import UserCreate, UserRead
@@ -26,6 +29,15 @@ async def create_user(data: UserCreate, session: AsyncSession = Depends(get_sess
     session.add(user)
     await session.commit()
     await session.refresh(user)
+    return user
+
+
+@router.get("/search", response_model=UserRead)
+async def search_user(username: str, session: AsyncSession = Depends(get_session)):
+    result = await session.exec(select(User).where(User.username == username))
+    user = result.first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     return user
 
 
@@ -51,6 +63,23 @@ async def get_posts_by_user(user_id: uuid.UUID, session: AsyncSession = Depends(
     user = await session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    result = await session.exec(select(Post).where(Post.user_id == user_id))
-    return result.all()
+
+    posts = (await session.exec(select(Post).where(Post.user_id == user_id))).all()
+
+    response = []
+    for post in posts:
+        images = (await session.exec(select(Image).where(Image.post_id == post.id))).all()
+        likes_count = len((await session.exec(select(Like).where(Like.post_id == post.id))).all())
+        comments_count = len((await session.exec(select(Comment).where(Comment.post_id == post.id))).all())
+        response.append(PostRead(
+            id=post.id,
+            user_id=post.user_id,
+            description=post.description,
+            created_at=post.created_at,
+            images=images,
+            likes_count=likes_count,
+            comments_count=comments_count,
+        ))
+
+    return response
 
